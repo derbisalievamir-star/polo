@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎂 Фабрика Тортов</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --cream:#faf6f0;--cream2:#f3ece0;--warm:#e8ddd0;
+  --rose:#c4907a;--rose-dark:#a06a54;--rose-light:#edddd6;
+  --brown:#3d2b1f;--brown2:#6b4c3b;--muted:#9a8478;
+  --gold:#d4a843;--gold-light:#f5e6b8;
+  --border:rgba(61,43,31,0.12);
+  --green:#5a9a6a;--green-light:#e8f5ec;
+}
+
+html,body{height:100%;overflow:hidden}
+
+body{
+  background:var(--cream);
+  color:var(--brown);
+  font-family:'Jost',sans-serif;
+  font-weight:300;
+  cursor:none;
+  user-select:none;
+}
+
+/* Cursor */
+.cursor-dot{position:fixed;width:8px;height:8px;background:var(--rose);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .3s,height .3s,background .3s}
+.cursor-ring{position:fixed;width:32px;height:32px;border:1.5px solid rgba(196,144,122,0.5);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width .35s,height .35s,border-color .35s}
+.cursor-dot.h{width:18px;height:18px;background:var(--rose-dark)}
+.cursor-ring.h{width:50px;height:50px;border-color:var(--rose)}
+@media(hover:none){.cursor-dot,.cursor-ring{display:none}}
+
+/* Layout */
+.game{display:grid;grid-template-columns:320px 1fr 300px;height:100vh;overflow:hidden}
+
+/* ── LEFT PANEL ── */
+.panel-left{
+  background:var(--cream2);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+.factory-header{
+  padding:1.2rem 1.4rem 1rem;
+  border-bottom:1px solid var(--border);
+  background:var(--cream);
+}
+.factory-name{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.4rem;font-weight:600;
+  color:var(--brown);letter-spacing:0.04em;
+}
+.factory-sub{font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+
+.stats-block{
+  padding:1rem 1.4rem;
+  border-bottom:1px solid var(--border);
+}
+.stat-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.4rem}
+.stat-label{font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)}
+.stat-value{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:600;color:var(--brown);line-height:1}
+.stat-value.gold{color:var(--gold)}
+.stat-small{font-size:0.78rem;color:var(--muted)}
+
+.cps-bar-wrap{margin-top:0.6rem}
+.cps-bar-bg{height:4px;background:var(--warm);border-radius:100px;overflow:hidden}
+.cps-bar-fill{height:100%;background:linear-gradient(90deg,var(--rose),var(--gold));border-radius:100px;transition:width 0.8s}
+
+/* Big cake clicker */
+.clicker-area{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:1rem;
+  position:relative;overflow:hidden;
+  background:var(--cream);
+}
+.clicker-area::before{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(circle,rgba(196,144,122,0.1) 1px,transparent 1px);
+  background-size:24px 24px;
+}
+
+.big-cake{
+  font-size:7rem;
+  cursor:none;
+  position:relative;z-index:1;
+  transition:transform 0.08s;
+  filter:drop-shadow(0 8px 24px rgba(196,144,122,0.25));
+  animation:cakeBob 3s ease-in-out infinite;
+}
+.big-cake:active,.big-cake.clicked{transform:scale(0.88)}
+
+@keyframes cakeBob{
+  0%,100%{transform:translateY(0) rotate(-2deg)}
+  50%{transform:translateY(-8px) rotate(2deg)}
+}
+
+.click-hint{
+  font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--muted);position:relative;z-index:1;
+}
+.click-power{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1rem;font-style:italic;color:var(--rose);
+  position:relative;z-index:1;
+}
+
+/* Floating +1 */
+.float-score{
+  position:fixed;
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.4rem;font-weight:600;
+  color:var(--rose-dark);
+  pointer-events:none;z-index:9997;
+  animation:floatUp 1s forwards;
+}
+@keyframes floatUp{
+  0%{opacity:1;transform:translateY(0) scale(1)}
+  100%{opacity:0;transform:translateY(-80px) scale(0.6)}
+}
+
+/* Milestones */
+.milestone-pop{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+  background:var(--brown);color:var(--cream);
+  padding:1.5rem 2.5rem;border-radius:16px;
+  text-align:center;z-index:9000;
+  transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),opacity 0.4s;
+  opacity:0;
+}
+.milestone-pop.show{transform:translate(-50%,-50%) scale(1);opacity:1}
+.milestone-emoji{font-size:2.5rem;display:block;margin-bottom:0.5rem}
+.milestone-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;color:var(--gold)}
+.milestone-desc{font-size:0.82rem;color:rgba(250,246,240,0.7);margin-top:0.3rem}
+
+/* ── CENTER PANEL ── */
+.panel-center{
+  display:flex;flex-direction:column;
+  border-right:1px solid var(--border);
+  overflow:hidden;
+}
+
+.panel-tabs{
+  display:flex;border-bottom:1px solid var(--border);
+  background:var(--cream);flex-shrink:0;
+}
+.tab-btn{
+  flex:1;padding:0.9rem;
+  background:transparent;border:none;
+  font-family:'Jost',sans-serif;font-size:0.75rem;
+  letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--muted);cursor:none;
+  border-bottom:2px solid transparent;
+  transition:color 0.3s,border-color 0.3s;
+}
+.tab-btn.active{color:var(--rose);border-bottom-color:var(--rose)}
+.tab-btn:hover:not(.active){color:var(--brown2)}
+
+.panel-scroll{flex:1;overflow-y:auto;padding:1.2rem}
+.panel-scroll::-webkit-scrollbar{width:4px}
+.panel-scroll::-webkit-scrollbar-thumb{background:var(--warm);border-radius:4px}
+
+/* Upgrade cards */
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+.section-label{
+  font-size:0.68rem;letter-spacing:0.2em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:0.8rem;margin-top:0.3rem;
+}
+
+.upgrade-card{
+  display:flex;align-items:center;gap:0.9rem;
+  background:var(--cream);border:1px solid var(--border);
+  border-radius:12px;padding:0.9rem 1rem;
+  margin-bottom:0.7rem;cursor:none;
+  transition:border-color 0.3s,transform 0.2s,background 0.2s;
+  position:relative;overflow:hidden;
+}
+.upgrade-card.buyable{border-color:rgba(196,144,122,0.5);background:var(--rose-light)}
+.upgrade-card.buyable:hover{border-color:var(--rose);transform:translateX(4px)}
+.upgrade-card.bought{opacity:0.4;background:var(--warm)}
+.upgrade-card.buyable:active{transform:scale(0.98) translateX(4px)}
+
+.upgrade-card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--rose);opacity:0;transition:opacity 0.3s;border-radius:3px 0 0 3px;
+}
+.upgrade-card.buyable::before{opacity:1}
+
+.upg-icon{font-size:1.8rem;flex-shrink:0}
+.upg-info{flex:1;min-width:0}
+.upg-name{font-size:0.9rem;font-weight:500;color:var(--brown)}
+.upg-desc{font-size:0.75rem;color:var(--muted);margin-top:1px;line-height:1.4}
+.upg-cost{
+  display:flex;align-items:center;gap:0.3rem;
+  font-family:'Cormorant Garamond',serif;
+  font-size:1rem;font-weight:600;
+  color:var(--brown2);flex-shrink:0;
+  white-space:nowrap;
+}
+.upg-cost.can{color:var(--rose-dark)}
+.upg-badge{
+  position:absolute;top:0.5rem;right:0.5rem;
+  font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;
+  background:var(--gold);color:var(--brown);
+  padding:2px 7px;border-radius:100px;font-weight:500;
+}
+
+/* Building cards */
+.building-card{
+  display:grid;grid-template-columns:auto 1fr auto;
+  align-items:center;gap:0.9rem;
+  background:var(--cream);border:1px solid var(--border);
+  border-radius:12px;padding:0.9rem 1rem;
+  margin-bottom:0.7rem;cursor:none;
+  transition:border-color 0.3s,background 0.2s;
+  position:relative;overflow:hidden;
+}
+.building-card.buyable{border-color:rgba(196,144,122,0.4);background:var(--rose-light)}
+.building-card.buyable:hover{border-color:var(--rose)}
+.building-card.buyable:active{transform:scale(0.99)}
+
+.bld-icon-wrap{
+  width:48px;height:48px;border-radius:10px;
+  background:var(--warm);display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;flex-shrink:0;position:relative;
+}
+.bld-count-badge{
+  position:absolute;top:-5px;right:-5px;
+  width:18px;height:18px;border-radius:50%;
+  background:var(--rose);color:#fff;
+  font-size:0.65rem;font-weight:600;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid var(--cream);
+}
+.bld-info{min-width:0}
+.bld-name{font-size:0.92rem;font-weight:500;color:var(--brown)}
+.bld-desc{font-size:0.73rem;color:var(--muted);margin-top:1px;line-height:1.4}
+.bld-cps{font-size:0.7rem;color:var(--rose);margin-top:3px}
+.bld-right{text-align:right;flex-shrink:0}
+.bld-cost{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.05rem;font-weight:600;color:var(--brown2);
+  white-space:nowrap;
+}
+.bld-cost.can{color:var(--rose-dark)}
+.bld-buy-btn{
+  display:block;margin-top:0.3rem;
+  font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;
+  background:var(--rose);color:#fff;border:none;
+  padding:3px 10px;border-radius:100px;cursor:none;
+  transition:background 0.3s;
+}
+.bld-buy-btn:hover{background:var(--rose-dark)}
+.bld-buy-btn:disabled{background:var(--warm);color:var(--muted);cursor:default}
+
+/* ── RIGHT PANEL ── */
+.panel-right{
+  background:var(--cream2);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+.log-header{
+  padding:1rem 1.2rem;
+  border-bottom:1px solid var(--border);
+  background:var(--cream);
+  font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);
+}
+
+.log-scroll{flex:1;overflow-y:auto;padding:0.8rem 1rem}
+.log-scroll::-webkit-scrollbar{width:3px}
+.log-scroll::-webkit-scrollbar-thumb{background:var(--warm);border-radius:3px}
+
+.log-item{
+  display:flex;align-items:flex-start;gap:0.7rem;
+  padding:0.6rem 0;border-bottom:1px solid var(--border);
+  animation:logSlide 0.4s both;
+}
+@keyframes logSlide{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.log-icon{font-size:1rem;flex-shrink:0;margin-top:2px}
+.log-text{font-size:0.8rem;color:var(--brown2);line-height:1.5}
+.log-text strong{color:var(--brown);font-weight:500}
+.log-time{font-size:0.68rem;color:var(--muted);flex-shrink:0;margin-top:3px}
+
+/* Prestige / achievement area */
+.prestige-panel{
+  padding:1rem 1.2rem;
+  border-top:1px solid var(--border);
+  background:var(--cream);
+}
+.prestige-label{font-size:0.68rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem}
+.prestige-btn{
+  width:100%;padding:0.7rem;
+  background:var(--brown);color:var(--gold);
+  border:none;border-radius:8px;cursor:none;
+  font-family:'Cormorant Garamond',serif;
+  font-size:1rem;font-weight:600;font-style:italic;
+  transition:background 0.3s,transform 0.2s;
+}
+.prestige-btn:hover:not(:disabled){background:var(--brown2);transform:translateY(-2px)}
+.prestige-btn:disabled{opacity:0.4;cursor:default}
+
+/* Bonus flash */
+.bonus-flash{
+  position:fixed;inset:0;
+  background:rgba(212,168,67,0.15);
+  pointer-events:none;z-index:8000;
+  opacity:0;transition:opacity 0.1s;
+}
+.bonus-flash.show{opacity:1}
+
+/* Achievement toast */
+.ach-toast{
+  position:fixed;bottom:1.5rem;left:50%;
+  transform:translateX(-50%) translateY(120%);
+  background:var(--brown);color:var(--cream);
+  padding:0.9rem 1.6rem;border-radius:100px;
+  display:flex;align-items:center;gap:0.7rem;
+  font-size:0.85rem;border:1px solid rgba(212,168,67,0.4);
+  z-index:9000;transition:transform 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  white-space:nowrap;
+}
+.ach-toast.show{transform:translateX(-50%) translateY(0)}
+.ach-toast-icon{font-size:1.2rem}
+
+/* Savings progress */
+.progress-wrap{margin-top:0.6rem}
+.progress-label{display:flex;justify-content:space-between;font-size:0.7rem;color:var(--muted);margin-bottom:4px}
+.progress-bg{height:6px;background:var(--warm);border-radius:100px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--rose),var(--gold));border-radius:100px;transition:width 0.5s}
+
+/* Responsive hint */
+@media(max-width:900px){
+  .game{grid-template-columns:1fr}
+  .panel-left,.panel-center{display:block}
+  html,body{overflow:auto;height:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="cursor-dot" id="cDot"></div>
+<div class="cursor-ring" id="cRing"></div>
+<div class="bonus-flash" id="bonusFlash"></div>
+<div class="ach-toast" id="achToast"><span class="ach-toast-icon" id="achIcon">🏆</span><span id="achText">Достижение!</span></div>
+<div class="milestone-pop" id="milestonePop">
+  <span class="milestone-emoji" id="msEmoji"></span>
+  <div class="milestone-title" id="msTitle"></div>
+  <div class="milestone-desc" id="msDesc"></div>
+</div>
+
+<div class="game">
+
+  <!-- LEFT -->
+  <div class="panel-left">
+    <div class="factory-header">
+      <div class="factory-name">🏭 Фабрика Sucré</div>
+      <div class="factory-sub">Нажимай · улучшай · процветай</div>
+    </div>
+
+    <div class="stats-block">
+      <div class="stat-row">
+        <span class="stat-label">Тортиков всего</span>
+        <span class="stat-value gold" id="totalCakes">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Сейчас</span>
+        <span class="stat-value" id="cakes">0 🎂</span>
+      </div>
+      <div class="stat-row" style="margin-top:0.5rem">
+        <span class="stat-small" id="cpsLabel">в секунду: 0</span>
+        <span class="stat-small" id="clickPower">за клик: 1</span>
+      </div>
+      <div class="cps-bar-wrap">
+        <div class="cps-bar-bg"><div class="cps-bar-fill" id="cpsBar" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="clicker-area">
+      <div class="big-cake" id="bigCake">🎂</div>
+      <div class="click-hint">нажми на торт</div>
+      <div class="click-power" id="clickPowerDisplay">+1 за клик</div>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="panel-center">
+    <div class="panel-tabs">
+      <button class="tab-btn active" data-tab="buildings">🏗 Постройки</button>
+      <button class="tab-btn" data-tab="upgrades">✨ Улучшения</button>
+      <button class="tab-btn" data-tab="achievements">🏆 Достижения</button>
+    </div>
+    <div class="panel-scroll">
+      <!-- Buildings tab -->
+      <div class="tab-content active" id="tab-buildings">
+        <div class="section-label">Производство</div>
+        <div id="buildingsContainer"></div>
+      </div>
+      <!-- Upgrades tab -->
+      <div class="tab-content" id="tab-upgrades">
+        <div class="section-label">Доступные улучшения</div>
+        <div id="upgradesContainer"></div>
+      </div>
+      <!-- Achievements tab -->
+      <div class="tab-content" id="tab-achievements">
+        <div class="section-label">Ваши достижения</div>
+        <div id="achievementsContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="panel-right">
+    <div class="log-header">📜 История фабрики</div>
+    <div class="log-scroll" id="logScroll"></div>
+    <div class="prestige-panel">
+      <div class="prestige-label">Престиж — сбросить за бонус x2</div>
+      <div class="progress-wrap">
+        <div class="progress-label">
+          <span id="prestigeProgress">0 / 100 000 🎂</span>
+          <span id="prestigeLevel">Ур. 0</span>
+        </div>
+        <div class="progress-bg"><div class="progress-fill" id="prestigeBar" style="width:0%"></div></div>
+      </div>
+      <button class="prestige-btn" id="prestigeBtn" disabled style="margin-top:0.8rem">✦ Престиж ✦</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════
+const G = {
+  cakes: 0,
+  totalCakes: 0,
+  cps: 0,
+  clickPower: 1,
+  prestigeLevel: 0,
+  prestigeMultiplier: 1,
+  buildings: [],
+  upgrades: [],
+  achievements: [],
+  log: [],
+  lastTick: Date.now(),
+};
+
+// ═══════════════════════════════════════
+// BUILDINGS DATA
+// ═══════════════════════════════════════
+const BUILDINGS_DATA = [
+  {id:'mixer',name:'Миксер',icon:'🔄',desc:'Автоматически замешивает тесто',baseCps:0.1,baseCost:15,costMult:1.15,count:0,flavor:'Жужжит день и ночь'},
+  {id:'oven',name:'Печь',icon:'🔥',desc:'Выпекает коржи круглосуточно',baseCps:0.5,baseCost:100,costMult:1.15,count:0,flavor:'Всегда горячая'},
+  {id:'cream',name:'Кремовый цех',icon:'🍦',desc:'Взбивает самые нежные кремы',baseCps:2,baseCost:500,costMult:1.15,count:0,flavor:'Мягко и сладко'},
+  {id:'decor',name:'Мастерская декора',icon:'🎨',desc:'Украшает торты вручную',baseCps:8,baseCost:2000,costMult:1.15,count:0,flavor:'Красота требует жертв'},
+  {id:'robot',name:'Робот-кондитер',icon:'🤖',desc:'Промышленная точность и скорость',baseCps:25,baseCost:8000,costMult:1.15,count:0,flavor:'Никогда не устаёт'},
+  {id:'factory',name:'Мини-завод',icon:'🏭',desc:'Полноценная производственная линия',baseCps:80,baseCost:30000,costMult:1.15,count:0,flavor:'Гудит, как улей'},
+  {id:'portal',name:'Портал вкуса',icon:'🌀',desc:'Торты из другого измерения',baseCps:250,baseCost:100000,costMult:1.15,count:0,flavor:'Загадочный аромат'},
+];
+
+// ═══════════════════════════════════════
+// UPGRADES DATA
+// ═══════════════════════════════════════
+const UPGRADES_DATA = [
+  {id:'better_recipe',name:'Улучшенный рецепт',icon:'📖',desc:'Клики дают +2 тортика вместо 1',cost:50,bought:false,condition:()=>true,apply:()=>{G.clickPower+=1},bonus:'🎉 +1 к силе клика!'},
+  {id:'sharp_knife',name:'Острый нож',icon:'🔪',desc:'Миксеры работают в 2 раза быстрее',cost:150,bought:false,condition:()=>getBuildingCount('mixer')>=3,apply:()=>boostBuilding('mixer',2),bonus:'⚡ Миксеры ×2!'},
+  {id:'premium_butter',name:'Премиум масло',icon:'🧈',desc:'Все производство +20%',cost:300,bought:false,condition:()=>G.totalCakes>=100,apply:()=>{G.prestigeMultiplier*=1.2},bonus:'✨ +20% ко всему!'},
+  {id:'golden_spatula',name:'Золотая лопатка',icon:'🥄',desc:'Клики дают ещё +5 тортиков',cost:500,bought:false,condition:()=>G.totalCakes>=300,apply:()=>{G.clickPower+=5},bonus:'🏅 +5 к силе клика!'},
+  {id:'faster_oven',name:'Турбо-печь',icon:'💨',desc:'Печи работают в 2 раза быстрее',cost:800,bought:false,condition:()=>getBuildingCount('oven')>=3,apply:()=>boostBuilding('oven',2),bonus:'🔥 Печи ×2!'},
+  {id:'cream_secret',name:'Секрет крема',icon:'🤫',desc:'Кремовые цехи работают в 3 раза быстрее',cost:2500,bought:false,condition:()=>getBuildingCount('cream')>=3,apply:()=>boostBuilding('cream',3),bonus:'🍦 Цех ×3!'},
+  {id:'click_frenzy',name:'Кликовая лихорадка',icon:'⚡',desc:'Клики дают +20 тортиков',cost:4000,bought:false,condition:()=>G.totalCakes>=2000,apply:()=>{G.clickPower+=20},bonus:'🌪 +20 к силе клика!'},
+  {id:'auto_clicker',name:'Авто-нажиматель',icon:'👆',desc:'Каждую секунду +5 тортиков от кликов',cost:6000,bought:false,condition:()=>G.totalCakes>=5000,apply:()=>{G.autoClick=5},bonus:'🤖 Авто-клик +5/с!'},
+  {id:'chocolate_river',name:'Шоколадная река',icon:'🍫',desc:'Фабрики в 2 раза эффективнее',cost:20000,bought:false,condition:()=>getBuildingCount('factory')>=2,apply:()=>boostBuilding('factory',2),bonus:'🍫 Заводы ×2!'},
+  {id:'legendary_recipe',name:'Легендарный рецепт',icon:'📜',desc:'Всё производство ×1.5',cost:50000,bought:false,condition:()=>G.totalCakes>=30000,apply:()=>{G.prestigeMultiplier*=1.5},bonus:'👑 Производство ×1.5!'},
+];
+
+// ═══════════════════════════════════════
+// ACHIEVEMENTS DATA
+// ═══════════════════════════════════════
+const ACHIEVEMENTS_DATA = [
+  {id:'first_cake',name:'Первый торт',icon:'🎂',desc:'Испеки первый тортик',condition:()=>G.totalCakes>=1,unlocked:false},
+  {id:'hundred',name:'Сотня!',icon:'💯',desc:'Набери 100 тортиков',condition:()=>G.totalCakes>=100,unlocked:false},
+  {id:'thousand',name:'Тысячник',icon:'🎊',desc:'Набери 1 000 тортиков',condition:()=>G.totalCakes>=1000,unlocked:false},
+  {id:'millionaire',name:'Тортовый миллионер',icon:'💎',desc:'Набери 1 000 000 тортиков',condition:()=>G.totalCakes>=1000000,unlocked:false},
+  {id:'first_building',name:'Первое здание',icon:'🏗',desc:'Купи первую постройку',condition:()=>G.buildings.some(b=>b.count>0),unlocked:false},
+  {id:'all_buildings',name:'Полный комплект',icon:'🏙',desc:'Купи хотя бы одну каждую постройку',condition:()=>G.buildings.every(b=>b.count>0),unlocked:false},
+  {id:'cps_10',name:'Конвейер запущен',icon:'⚙️',desc:'Достигни 10 тортиков/сек',condition:()=>calcCps()>=10,unlocked:false},
+  {id:'cps_100',name:'Фабрика мечты',icon:'🏭',desc:'Достигни 100 тортиков/сек',condition:()=>calcCps()>=100,unlocked:false},
+  {id:'prestige_1',name:'Перерождение',icon:'✨',desc:'Получи первый престиж',condition:()=>G.prestigeLevel>=1,unlocked:false},
+  {id:'ten_upgrades',name:'Мастер улучшений',icon:'🔧',desc:'Купи все улучшения',condition:()=>G.upgrades.every(u=>u.bought),unlocked:false},
+];
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function getBuildingCount(id){
+  const b=G.buildings.find(b=>b.id===id);
+  return b?b.count:0;
+}
+function boostBuilding(id,mult){
+  const b=G.buildings.find(b=>b.id===id);
+  if(b)b.baseCps*=mult;
+}
+function fmt(n){
+  if(n>=1e9)return(n/1e9).toFixed(2)+'млрд';
+  if(n>=1e6)return(n/1e6).toFixed(2)+'млн';
+  if(n>=1e3)return(n/1e3).toFixed(1)+'к';
+  return Math.floor(n).toString();
+}
+function calcCps(){
+  let c=0;
+  G.buildings.forEach(b=>{c+=b.baseCps*b.count});
+  c*=G.prestigeMultiplier;
+  return c;
+}
+function buildingCost(b){
+  return Math.floor(b.baseCost*Math.pow(b.costMult,b.count));
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+function init(){
+  G.buildings = BUILDINGS_DATA.map(b=>({...b,boostMult:1}));
+  G.upgrades = UPGRADES_DATA.map(u=>({...u}));
+  G.achievements = ACHIEVEMENTS_DATA.map(a=>({...a}));
+  G.autoClick = 0;
+  renderBuildings();
+  renderUpgrades();
+  renderAchievements();
+  addLog('🏭','Фабрика открыта','Добро пожаловать в Sucré!');
+  addLog('🎂','Нажимай на торт','Каждый клик приносит тортики');
+  requestAnimationFrame(gameLoop);
+}
+
+// ═══════════════════════════════════════
+// GAME LOOP
+// ═══════════════════════════════════════
+function gameLoop(){
+  const now=Date.now();
+  const dt=(now-G.lastTick)/1000;
+  G.lastTick=now;
+
+  const earned=(calcCps()+G.autoClick)*dt;
+  G.cakes+=earned;
+  G.totalCakes+=earned;
+
+  updateUI();
+  checkAchievements();
+  requestAnimationFrame(gameLoop);
+}
+
+// ═══════════════════════════════════════
+// UI UPDATE
+// ═══════════════════════════════════════
+function updateUI(){
+  const cps=calcCps();
+  document.getElementById('cakes').textContent=fmt(G.cakes)+' 🎂';
+  document.getElementById('totalCakes').textContent=fmt(G.totalCakes);
+  document.getElementById('cpsLabel').textContent='в секунду: '+fmt(cps);
+  document.getElementById('clickPower').textContent='за клик: '+fmt(G.clickPower*G.prestigeMultiplier);
+  document.getElementById('clickPowerDisplay').textContent='+'+fmt(G.clickPower*G.prestigeMultiplier)+' за клик';
+  const barPct=Math.min(cps/200*100,100);
+  document.getElementById('cpsBar').style.width=barPct+'%';
+
+  const PRESTIGE_REQ=100000;
+  const pp=Math.min(G.totalCakes/PRESTIGE_REQ*100,100);
+  document.getElementById('prestigeProgress').textContent=fmt(G.totalCakes)+' / '+fmt(PRESTIGE_REQ)+' 🎂';
+  document.getElementById('prestigeLevel').textContent='Ур. '+G.prestigeLevel;
+  document.getElementById('prestigeBar').style.width=pp+'%';
+  document.getElementById('prestigeBtn').disabled=G.totalCakes<PRESTIGE_REQ;
+
+  updateBuildingAffordability();
+  updateUpgradeAffordability();
+}
+
+function updateBuildingAffordability(){
+  G.buildings.forEach(b=>{
+    const card=document.getElementById('bld_'+b.id);
+    if(!card)return;
+    const cost=buildingCost(b);
+    const can=G.cakes>=cost;
+    card.classList.toggle('buyable',can);
+    const costEl=card.querySelector('.bld-cost');
+    if(costEl){costEl.textContent=fmt(cost)+' 🎂';costEl.className='bld-cost'+(can?' can':'');}
+    const badge=card.querySelector('.bld-count-badge');
+    if(badge)badge.textContent=b.count;
+    const buyBtn=card.querySelector('.bld-buy-btn');
+    if(buyBtn)buyBtn.disabled=!can;
+  });
+}
+
+function updateUpgradeAffordability(){
+  G.upgrades.forEach(u=>{
+    const card=document.getElementById('upg_'+u.id);
+    if(!card)return;
+    const visible=u.condition()&&!u.bought;
+    card.style.display=visible?'':'none';
+    if(visible){
+      const can=G.cakes>=u.cost;
+      card.classList.toggle('buyable',can);
+      card.classList.toggle('bought',u.bought);
+      const costEl=card.querySelector('.upg-cost');
+      if(costEl){costEl.textContent=fmt(u.cost)+' 🎂';costEl.className='upg-cost'+(can?' can':'');}
+    }
+  });
+}
+
+// ═══════════════════════════════════════
+// RENDER BUILDINGS
+// ═══════════════════════════════════════
+function renderBuildings(){
+  const c=document.getElementById('buildingsContainer');
+  c.innerHTML=G.buildings.map(b=>`
+    <div class="building-card" id="bld_${b.id}" onclick="buyBuilding('${b.id}')">
+      <div class="bld-icon-wrap">
+        <span>${b.icon}</span>
+        <span class="bld-count-badge">${b.count}</span>
+      </div>
+      <div class="bld-info">
+        <div class="bld-name">${b.name}</div>
+        <div class="bld-desc">${b.desc}</div>
+        <div class="bld-cps">+${b.baseCps} 🎂/с каждый</div>
+      </div>
+      <div class="bld-right">
+        <div class="bld-cost">${fmt(buildingCost(b))} 🎂</div>
+        <button class="bld-buy-btn" disabled>Купить</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════
+// RENDER UPGRADES
+// ═══════════════════════════════════════
+function renderUpgrades(){
+  const c=document.getElementById('upgradesContainer');
+  c.innerHTML=G.upgrades.map(u=>`
+    <div class="upgrade-card ${u.bought?'bought':''}" id="upg_${u.id}" onclick="buyUpgrade('${u.id}')" style="display:${u.condition()&&!u.bought?'flex':'none'}">
+      <div class="upg-icon">${u.icon}</div>
+      <div class="upg-info">
+        <div class="upg-name">${u.name}</div>
+        <div class="upg-desc">${u.desc}</div>
+      </div>
+      <div class="upg-cost">${fmt(u.cost)} 🎂</div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════
+// RENDER ACHIEVEMENTS
+// ═══════════════════════════════════════
+function renderAchievements(){
+  const c=document.getElementById('achievementsContainer');
+  c.innerHTML=G.achievements.map(a=>`
+    <div class="upgrade-card ${a.unlocked?'buyable':'bought'}" style="opacity:${a.unlocked?1:0.4};cursor:default">
+      <div class="upg-icon">${a.unlocked?a.icon:'🔒'}</div>
+      <div class="upg-info">
+        <div class="upg-name">${a.name}</div>
+        <div class="upg-desc">${a.desc}</div>
+      </div>
+      ${a.unlocked?'<div class="upg-badge">Получено</div>':''}
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════
+// BUY BUILDING
+// ═══════════════════════════════════════
+function buyBuilding(id){
+  const b=G.buildings.find(b=>b.id===id);
+  if(!b)return;
+  const cost=buildingCost(b);
+  if(G.cakes<cost)return;
+  G.cakes-=cost;
+  b.count++;
+  flashBonus();
+  addLog(b.icon,'Куплено: '+b.name,'Стоимость: '+fmt(cost)+' 🎂');
+  showAchToast(b.icon,'Куплен '+b.name+'!');
+  renderBuildings();
+  updateUI();
+}
+
+// ═══════════════════════════════════════
+// BUY UPGRADE
+// ═══════════════════════════════════════
+function buyUpgrade(id){
+  const u=G.upgrades.find(u=>u.id===id);
+  if(!u||u.bought||G.cakes<u.cost)return;
+  G.cakes-=u.cost;
+  u.bought=true;
+  u.apply();
+  flashBonus();
+  showMilestone('✨',u.name,u.bonus);
+  addLog(u.icon,'Улучшение: '+u.name,u.bonus);
+  renderUpgrades();
+  updateUI();
+}
+
+// ═══════════════════════════════════════
+// CHECK ACHIEVEMENTS
+// ═══════════════════════════════════════
+function checkAchievements(){
+  G.achievements.forEach(a=>{
+    if(!a.unlocked&&a.condition()){
+      a.unlocked=true;
+      showAchToast(a.icon,'Достижение: '+a.name);
+      addLog(a.icon,'Достижение получено!',a.name+' — '+a.desc);
+      renderAchievements();
+    }
+  });
+}
+
+// ═══════════════════════════════════════
+// CLICK HANDLER
+// ═══════════════════════════════════════
+document.getElementById('bigCake').addEventListener('click',function(e){
+  const earned=G.clickPower*G.prestigeMultiplier;
+  G.cakes+=earned;
+  G.totalCakes+=earned;
+  this.classList.add('clicked');
+  setTimeout(()=>this.classList.remove('clicked'),100);
+  spawnFloat(e.clientX,e.clientY,'+'+fmt(earned));
+  updateUI();
+});
+
+function spawnFloat(x,y,text){
+  const el=document.createElement('div');
+  el.className='float-score';
+  el.textContent=text+'🎂';
+  el.style.left=(x+Math.random()*20-10)+'px';
+  el.style.top=(y-10)+'px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1000);
+}
+
+// ═══════════════════════════════════════
+// PRESTIGE
+// ═══════════════════════════════════════
+document.getElementById('prestigeBtn').addEventListener('click',()=>{
+  if(G.totalCakes<100000)return;
+  G.prestigeLevel++;
+  G.prestigeMultiplier=(1+G.prestigeLevel*0.5);
+  G.cakes=0;
+  G.totalCakes=0;
+  G.buildings.forEach(b=>b.count=0);
+  G.upgrades.forEach(u=>{u.bought=false});
+  showMilestone('👑','Престиж '+G.prestigeLevel+'!','Множитель производства: ×'+G.prestigeMultiplier.toFixed(1));
+  addLog('👑','Престиж!','Уровень '+G.prestigeLevel+' — множитель ×'+G.prestigeMultiplier.toFixed(1));
+  renderBuildings();
+  renderUpgrades();
+  renderAchievements();
+  updateUI();
+});
+
+// ═══════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ═══════════════════════════════════════
+// EFFECTS
+// ═══════════════════════════════════════
+function flashBonus(){
+  const f=document.getElementById('bonusFlash');
+  f.classList.add('show');
+  setTimeout(()=>f.classList.remove('show'),300);
+}
+
+let achTimer;
+function showAchToast(icon,text){
+  document.getElementById('achIcon').textContent=icon;
+  document.getElementById('achText').textContent=text;
+  const t=document.getElementById('achToast');
+  t.classList.add('show');
+  clearTimeout(achTimer);
+  achTimer=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+let msTimer;
+function showMilestone(emoji,title,desc){
+  document.getElementById('msEmoji').textContent=emoji;
+  document.getElementById('msTitle').textContent=title;
+  document.getElementById('msDesc').textContent=desc;
+  const pop=document.getElementById('milestonePop');
+  pop.classList.add('show');
+  clearTimeout(msTimer);
+  msTimer=setTimeout(()=>pop.classList.remove('show'),2500);
+}
+
+// ═══════════════════════════════════════
+// LOG
+// ═══════════════════════════════════════
+function addLog(icon,title,detail){
+  const wrap=document.getElementById('logScroll');
+  const now=new Date();
+  const time=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
+  const item=document.createElement('div');
+  item.className='log-item';
+  item.innerHTML=`<span class="log-icon">${icon}</span><span class="log-text"><strong>${title}</strong><br>${detail}</span><span class="log-time">${time}</span>`;
+  wrap.prepend(item);
+  const items=wrap.querySelectorAll('.log-item');
+  if(items.length>30)items[items.length-1].remove();
+}
+
+// ═══════════════════════════════════════
+// CUSTOM CURSOR
+// ═══════════════════════════════════════
+const dot=document.getElementById('cDot');
+const ring=document.getElementById('cRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  dot.style.left=mx+'px';dot.style.top=my+'px';
+});
+(function animRing(){
+  rx+=(mx-rx)*0.1;ry+=(my-ry)*0.1;
+  ring.style.left=rx+'px';ring.style.top=ry+'px';
+  requestAnimationFrame(animRing);
+})();
+document.querySelectorAll('button,.building-card,.upgrade-card,.big-cake,.tab-btn').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{dot.classList.add('h');ring.classList.add('h')});
+  el.addEventListener('mouseleave',()=>{dot.classList.remove('h');ring.classList.remove('h')});
+});
+document.addEventListener('mousedown',()=>{dot.classList.add('click');ring.classList.add('click')});
+document.addEventListener('mouseup',()=>{dot.classList.remove('click');ring.classList.remove('click')});
+
+// ═══════════════════════════════════════
+// START
+// ═══════════════════════════════════════
+init();
+</script>
+</body>
+</html>
